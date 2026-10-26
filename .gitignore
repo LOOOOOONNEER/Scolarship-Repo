@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dev-dist/
+.env
+.env.local
+.env.*.local
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+supabase/.temp/
+supabase/.branches/
+.DS_Store
