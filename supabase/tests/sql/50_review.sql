@@ -100,3 +100,29 @@ select tests.ok((select m.result from public.matches m join approved a on a.offe
   'student A (Tarlac, 1.75) is matched as eligible to the newly published offering');
 reset role;
 select tests.logout();
+
+-- ---------------------------------------------------------------- Phase 3: shared lists and sensitive questions
+select tests.logout();
+set role anon;
+select tests.ok((select count(*) from public.course_fields) >= 10, 'anyone can read the course field list');
+select tests.ok(not exists (select 1 from public.sensitive_questions_in_use()),
+  'no sensitive question is asked while no published scholarship needs one');
+reset role;
+
+insert into public.eligibility_rules (offering_id, kind, field, operator, description)
+select offering_id, 'criterion', 'is_pwd', 'is_true', 'Person with disability' from approved;
+
+set role anon;
+select tests.ok(array(select public.sensitive_questions_in_use()) = array['is_pwd'],
+  'a sensitive question appears once a published scholarship uses it');
+reset role;
+
+-- ---------------------------------------------------------------- withdrawing the privacy notice
+select tests.login('00000000-0000-0000-0000-00000000000b');
+set role authenticated;
+select tests.ok(exists (select 1 from public.profiles), 'B has a profile before withdrawing');
+update public.consents set withdrawn_at = now() where consent_type = 'privacy_notice' and withdrawn_at is null;
+select tests.ok(not exists (select 1 from public.profiles), 'withdrawing the privacy notice deletes the questionnaire answers');
+select tests.ok(not exists (select 1 from public.matches), 'and the matches');
+reset role;
+select tests.logout();

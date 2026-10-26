@@ -2,7 +2,7 @@
 
 An installable web app (PWA) that finds college scholarships in Central Luzon and shows students the ones they appear to qualify for, with the reason for every match.
 
-**Status: Phase 2 (Discovery v1) of the technical plan.** On top of Phase 1 (database, privacy rules, matching engine, app shell, sign-in, CI), the discovery engine now fetches official pages politely, extracts text from pages and PDFs, uses AI to pull out scholarship details with evidence for each field, checks every value with rules, and puts everything in an admin review queue. The student questionnaire comes in Phase 3.
+**Status: Phase 3 (Student app) of the technical plan.** Phases 1 and 2 built the database, privacy rules, matching engine, discovery engine and admin review queue. Phase 3 adds the privacy notice, the eligibility questionnaire (sensitive questions only when a scholarship needs them, with guardian consent for under-18s), the grouped match screens with "answer this question" links, consent withdrawal, and a page where students submit scholarship links. Next is Phase 4: alerts and change tracking.
 
 ## What's in the repo
 
@@ -123,6 +123,13 @@ Daily status upkeep downgrades "open, verified" to "open, not recently confirmed
 - Saving original files to Supabase Storage (text snapshots are kept).
 - The monthly coverage-audit form (the table exists).
 
-## Next: Phase 3 (Student app)
+## Updating an existing Supabase project
 
-The eligibility questionnaire, consent screens for sensitive questions, and the match screens.
+When new files appear in `supabase/migrations/`, run only the new ones in the SQL Editor, in filename order. If you set up the project before Phase 2, run:
+
+1. `20261026001100_discovery_v1.sql` (Phase 2: review queue and approval)
+2. `20261026001200_student_app.sql` (Phase 3: privacy notice, course list, sensitive questions)
+
+## Next: Phase 4 (Alerts)
+
+Web push and email notifications, deadline reminders for open, verified offerings, and the flow for applying changes found on a published offering's page.

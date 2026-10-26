@@ -2,6 +2,7 @@
 // constraints so problems show up in the form, not as database errors.
 
 import type { ApplicationStatus } from './types';
+import { CITIZENSHIP, EDUCATION_LEVELS, ENROLLMENT_STATUSES, SCHOOL_TYPES } from './options';
 
 export type RuleKind = 'criterion' | 'unstructured' | 'also_required';
 
@@ -26,44 +27,13 @@ export const RULE_FIELDS: { value: string; label: string; type: FieldType; optio
   { value: 'grade', label: 'Latest grade', type: 'grade' },
   { value: 'income', label: 'Household income (yearly)', type: 'income' },
   { value: 'is_4ps', label: '4Ps or Listahanan household', type: 'boolean' },
-  {
-    value: 'education_level',
-    label: 'Year level',
-    type: 'enum',
-    options: [
-      ['incoming_freshman', 'Incoming freshman'],
-      ['first_year', '1st year'],
-      ['second_year', '2nd year'],
-      ['third_year', '3rd year'],
-      ['fourth_year', '4th year'],
-      ['fifth_year', '5th year'],
-    ],
-  },
-  {
-    value: 'enrollment_status',
-    label: 'Enrollment status',
-    type: 'enum',
-    options: [
-      ['not_yet_enrolled', 'Not yet enrolled'],
-      ['enrolled', 'Enrolled'],
-      ['on_leave', 'On leave'],
-      ['irregular', 'Irregular'],
-    ],
-  },
-  {
-    value: 'school_type',
-    label: 'Type of school',
-    type: 'enum',
-    options: [
-      ['suc', 'State university or college'],
-      ['luc', 'Local university or college'],
-      ['private', 'Private'],
-      ['other', 'Other'],
-    ],
-  },
-  { value: 'ched_discipline', label: 'Course discipline', type: 'text' },
+  { value: 'education_level', label: 'Year level', type: 'enum', options: EDUCATION_LEVELS },
+  { value: 'enrollment_status', label: 'Enrollment status', type: 'enum', options: ENROLLMENT_STATUSES },
+  { value: 'school_type', label: 'Type of school', type: 'enum', options: SCHOOL_TYPES },
+  // Options come from the course_fields table; see fieldOptions().
+  { value: 'ched_discipline', label: 'Course field', type: 'enum', options: [] },
   { value: 'age', label: 'Age', type: 'number' },
-  { value: 'citizenship', label: 'Citizenship', type: 'text' },
+  { value: 'citizenship', label: 'Citizenship', type: 'enum', options: CITIZENSHIP },
   { value: 'holds_other_scholarship', label: 'Holds another scholarship', type: 'boolean' },
   { value: 'is_pwd', label: 'Person with disability', type: 'boolean' },
   { value: 'is_indigenous', label: 'Indigenous Peoples member', type: 'boolean' },
@@ -102,6 +72,12 @@ export const PROVIDER_KINDS: [string, string][] = [
   ['corporate', 'Company'],
   ['other', 'Other'],
 ];
+
+// Choices for an enum rule field. Course fields are loaded from the database.
+export function fieldOptions(field: string, courseFields: [string, string][]): [string, string][] {
+  if (field === 'ched_discipline') return courseFields;
+  return RULE_FIELDS.find((f) => f.value === field)?.options ?? [];
+}
 
 export function fieldType(field: string): FieldType | null {
   return RULE_FIELDS.find((f) => f.value === field)?.type ?? null;

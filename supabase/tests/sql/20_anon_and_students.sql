@@ -22,10 +22,12 @@ reset role;
 select tests.login('00000000-0000-0000-0000-00000000000a');
 set role authenticated;
 
+insert into public.consents (user_id, consent_type, notice_version)
+values ('00000000-0000-0000-0000-00000000000a', 'privacy_notice', 'test');
 insert into public.profiles (user_id, birth_date, education_level, enrollment_status, school_type,
   grade_value, grade_scale, grade_source, residence_province_id, income_bracket, citizenship)
 values ('00000000-0000-0000-0000-00000000000a', date '2006-01-15', 'second_year', 'enrolled', 'suc',
-  1.75, 'ph_1_to_5', 'report_card', (select id from public.localities where name = 'Tarlac'), 2, 'Filipino');
+  1.75, 'ph_1_to_5', 'report_card', (select id from public.localities where name = 'Tarlac'), 2, 'filipino');
 
 select tests.throws(
   $$insert into public.profiles (user_id) values ('00000000-0000-0000-0000-00000000000b')$$,
@@ -98,6 +100,18 @@ select tests.ok((select count(*) from public.matches) = 0, 'B cannot see A''s ma
 select tests.ok((select count(*) from public.consents) = 0, 'B cannot see A''s consents');
 select tests.ok((select count(*) from public.submissions) = 0, 'B cannot see A''s submissions');
 select tests.ok((select public.export_my_data() -> 'profile') = 'null'::jsonb, 'B''s export holds nothing of A''s');
+
+select tests.throws(
+  $$insert into public.profiles (user_id, birth_date) values ('00000000-0000-0000-0000-00000000000b', current_date - 6300)$$,
+  '42501', 'a profile cannot be saved before agreeing to the privacy notice');
+insert into public.consents (user_id, consent_type, notice_version)
+values ('00000000-0000-0000-0000-00000000000b', 'privacy_notice', 'test');
+select tests.throws(
+  $$insert into public.profiles (user_id, citizenship) values ('00000000-0000-0000-0000-00000000000b', 'martian')$$,
+  '23514', 'citizenship must be one of the listed answers');
+select tests.throws(
+  $$insert into public.profiles (user_id, ched_discipline) values ('00000000-0000-0000-0000-00000000000b', 'basket weaving')$$,
+  '23503', 'course field must come from the shared list');
 
 select tests.throws(
   $$insert into public.profiles (user_id, grade_value, grade_scale) values ('00000000-0000-0000-0000-00000000000b', 120, 'percent')$$,

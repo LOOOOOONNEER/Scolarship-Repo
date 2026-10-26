@@ -11,3 +11,4 @@ __pycache__/
 supabase/.temp/
 supabase/.branches/
 .DS_Store
+*.log

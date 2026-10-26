@@ -19,6 +19,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <>
               <NavLink to="/matches">My matches</NavLink>
               <NavLink to="/profile">Profile</NavLink>
+              <NavLink to="/submit">Submit a link</NavLink>
               <NavLink to="/settings">Privacy</NavLink>
               {isReviewer && <NavLink to="/admin">Admin</NavLink>}
               <button type="button" className="link-button" onClick={signOut}>

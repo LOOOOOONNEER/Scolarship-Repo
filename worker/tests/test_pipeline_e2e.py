@@ -19,7 +19,7 @@ from scholarship_worker.pipeline import DiscoveryPipeline, PipelineConfig
 from scholarship_worker.repository import Repository
 
 PAGE = """<html><head><title>Test Scholarship 2027</title></head><body><main>
-<h1>Test City Scholarship Program</h1>
+<h1>Riverbend Pipeline Grant</h1>
 <p>Academic Year 2027-2028</p>
 <p>Applications are open from November 1, 2026 to November 30, 2026.</p>
 <p>Qualifications: Bona fide resident of Tarlac. General weighted average of 2.00 or better.</p>
@@ -64,11 +64,11 @@ class FakeExtractor:
 
     def extract(self, text, *, source_url, title, links):
         self.calls += 1
-        if "Test City Scholarship Program" not in text:
+        if "Riverbend Pipeline Grant" not in text:
             return {"is_announcement": False, "offerings": []}
         rng = "Applications are open from November 1, 2026 to November 30, 2026."
         return {"is_announcement": True, "offerings": [{
-            "program_name": {"value": "Test City Scholarship Program", "evidence": "Test City Scholarship Program"},
+            "program_name": {"value": "Riverbend Pipeline Grant", "evidence": "Riverbend Pipeline Grant"},
             "provider_name": {"value": None, "evidence": None},
             "academic_year": {"value": "2027-2028", "evidence": "Academic Year 2027-2028"},
             "opens_on": {"value": "2026-11-01", "evidence": rng},
@@ -174,7 +174,7 @@ class PipelineEndToEnd(unittest.TestCase):
         tasks = q(conn, "select kind, summary from public.review_tasks where ref_id = %s and status = 'open'", (cand_id,))
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0][0], "new_offering")
-        self.assertIn("Test City Scholarship Program", tasks[0][1])
+        self.assertIn("Riverbend Pipeline Grant", tasks[0][1])
 
         [(last_success, failures)] = q(conn, "select last_success_at, consecutive_failures from public.sources where url = %s",
                                        (self.base + "/scholarships",))

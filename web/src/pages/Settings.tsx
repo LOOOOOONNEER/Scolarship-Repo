@@ -1,6 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { requireClient } from '../lib/supabase';
+import { formatDate } from '../lib/labels';
+import { SENSITIVE_QUESTIONS } from '../lib/options';
+
+interface ConsentRow {
+  id: string;
+  consent_type: string;
+  granted_at: string;
+}
+
+function consentLabel(type: string): string {
+  if (type === 'privacy_notice') return 'Privacy notice (needed for the questionnaire)';
+  if (type === 'guardian') return 'Parent or guardian consent';
+  const q = SENSITIVE_QUESTIONS.find((x) => `sensitive:${x.field}` === type);
+  return q ? `Sharing: ${q.label}` : type;
+}
 
 export function Settings() {
   const { signOut } = useAuth();
@@ -8,6 +23,34 @@ export function Settings() {
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [consents, setConsents] = useState<ConsentRow[]>([]);
+
+  const loadConsents = async () => {
+    const { data } = await requireClient()
+      .from('consents')
+      .select('id, consent_type, granted_at')
+      .is('withdrawn_at', null)
+      .order('granted_at');
+    setConsents((data ?? []) as ConsentRow[]);
+  };
+
+  useEffect(() => {
+    loadConsents();
+  }, []);
+
+  const withdraw = async (c: ConsentRow) => {
+    if (c.consent_type === 'privacy_notice') {
+      const ok = window.confirm('This deletes all your questionnaire answers and matches. Continue?');
+      if (!ok) return;
+    }
+    // The server stamps the time; the database then deletes the related answers.
+    const { error } = await requireClient().from('consents').update({ withdrawn_at: new Date().toISOString() }).eq('id', c.id);
+    if (error) setMessage('That did not work. Please try again.');
+    else {
+      setMessage(null);
+      await loadConsents();
+    }
+  };
 
   const exportData = async () => {
     setExporting(true);
@@ -40,6 +83,28 @@ export function Settings() {
   return (
     <section className="narrow">
       <h1>Privacy and your data</h1>
+
+      <div className="panel">
+        <h2>What you have agreed to</h2>
+        {consents.length === 0 ? (
+          <p className="muted">Nothing yet.</p>
+        ) : (
+          <ul className="consent-list">
+            {consents.map((c) => (
+              <li key={c.id}>
+                <span>
+                  {consentLabel(c.consent_type)}
+                  <span className="muted small"> · since {formatDate(c.granted_at)}</span>
+                </span>
+                <button type="button" className="link-button" onClick={() => withdraw(c)}>
+                  Withdraw
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="muted small">Withdrawing deletes the related answers straight away.</p>
+      </div>
 
       <div className="panel">
         <h2>Download your data</h2>

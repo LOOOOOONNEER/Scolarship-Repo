@@ -7,6 +7,7 @@ import {
   OPERATORS,
   PROVIDER_KINDS,
   RULE_FIELDS,
+  fieldOptions,
   STATUS_OPTIONS,
   fieldType,
   isHttpUrl,
@@ -111,6 +112,7 @@ export function ReviewCandidate() {
   const [providers, setProviders] = useState<Option[]>([]);
   const [provinces, setProvinces] = useState<Option[]>([]);
   const [scales, setScales] = useState<{ code: string; label: string }[]>([]);
+  const [courseFields, setCourseFields] = useState<[string, string][]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // form state
@@ -137,7 +139,7 @@ export function ReviewCandidate() {
   useEffect(() => {
     const client = requireClient();
     (async () => {
-      const [c, ev, pv, loc, gs] = await Promise.all([
+      const [c, ev, pv, loc, gs, cf] = await Promise.all([
         client
           .from('extracted_candidates')
           .select('id, status, confidence, suggested_status, summary, validation_flags, payload, raw_documents(url, retrieved_at, text_content)')
@@ -150,6 +152,7 @@ export function ReviewCandidate() {
         client.from('providers').select('id, name').order('name'),
         client.from('localities').select('id, name').eq('kind', 'province').order('name'),
         client.from('grade_scales').select('code, label'),
+        client.from('course_fields').select('code, label').order('sort'),
       ]);
       if (c.error || !c.data) {
         setLoadError('This candidate could not be loaded.');
@@ -162,6 +165,7 @@ export function ReviewCandidate() {
       setProviders(((pv.data ?? []) as Option[]));
       setProvinces(provinceOpts);
       setScales((gs.data ?? []) as { code: string; label: string }[]);
+      setCourseFields(((cf.data ?? []) as { code: string; label: string }[]).map((x) => [x.code, x.label]));
 
       const n = candidate.payload.normalized ?? {};
       setProgramName(n.program_name ?? '');
@@ -531,7 +535,7 @@ export function ReviewCandidate() {
                         >
                           {(type === 'province'
                             ? provinces.map((p) => [p.id, p.name] as [string, string])
-                            : RULE_FIELDS.find((f) => f.value === r.field)?.options ?? []
+                            : fieldOptions(r.field, courseFields)
                           ).map(([v, l]) => (
                             <option key={v} value={v}>
                               {l}
@@ -542,7 +546,7 @@ export function ReviewCandidate() {
                       {type === 'enum' && r.operator === 'eq' && (
                         <select value={r.value} onChange={(e) => updateRule(r.key, { value: e.target.value })} aria-label="Option">
                           <option value="">Option…</option>
-                          {(RULE_FIELDS.find((f) => f.value === r.field)?.options ?? []).map(([v, l]) => (
+                          {(fieldOptions(r.field, courseFields)).map(([v, l]) => (
                             <option key={v} value={v}>
                               {l}
                             </option>
