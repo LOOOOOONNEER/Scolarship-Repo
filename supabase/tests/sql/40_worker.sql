@@ -12,6 +12,10 @@ select tests.throws('select * from public.submissions', '42501', 'worker cannot 
 select tests.throws('select * from auth.users', '42501', 'worker cannot read auth users');
 select tests.throws('select public.export_my_data()', '42501', 'worker cannot call the export function');
 select tests.throws('select private.purge_expired()', '42501', 'worker cannot call private functions');
+select tests.throws($$select public.approve_candidate('50000000-0000-0000-0000-000000000002', '{}'::jsonb)$$, '42501',
+  'worker cannot approve candidates');
+select tests.ok((select count(*) from public.similar_programs('Test Merit Scholarship')) >= 1,
+  'worker can look up similar programs for duplicate detection');
 
 select tests.ok((select count(*) from public.submissions_for_worker) = 1, 'worker sees submitted links');
 select tests.ok(not exists (

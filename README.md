@@ -2,7 +2,7 @@
 
 An installable web app (PWA) that finds college scholarships in Central Luzon and shows students the ones they appear to qualify for, with the reason for every match.
 
-**Status: Phase 1 (Foundation) of the technical plan.** The database, privacy rules, matching engine, app shell, sign-in, worker skeleton and CI are in place. Discovery jobs (fetching, extraction, validation) come in Phase 2; the questionnaire UI in Phase 3.
+**Status: Phase 2 (Discovery v1) of the technical plan.** On top of Phase 1 (database, privacy rules, matching engine, app shell, sign-in, CI), the discovery engine now fetches official pages politely, extracts text from pages and PDFs, uses AI to pull out scholarship details with evidence for each field, checks every value with rules, and puts everything in an admin review queue. The student questionnaire comes in Phase 3.
 
 ## What's in the repo
 
@@ -12,7 +12,7 @@ An installable web app (PWA) that finds college scholarships in Central Luzon an
 | `supabase/tests/` | 86 access-control and matching checks, run on plain Postgres (no Supabase account needed) |
 | `supabase/functions/delete-account/` | Edge Function that lets a student delete their account |
 | `web/` | React + Vite + TypeScript PWA (Browse, Sign in, My matches, Privacy, Admin) |
-| `worker/` | Python discovery worker for GitHub Actions; currently runs a daily heartbeat |
+| `worker/` | Python discovery worker for GitHub Actions: fetcher, text extraction, keyword pre-filter, AI extraction, validation rules, pipeline |
 | `scripts/check_privacy_boundaries.py` | CI check: the worker never touches student tables, and no log line mentions a student answer |
 | `.github/workflows/` | CI, the daily Discovery schedule, and a monthly keepalive |
 
@@ -70,7 +70,12 @@ The publishable (anon) key is safe in the browser; row-level security protects t
 3. In GitHub, **Settings → Secrets and variables → Actions**:
    - secret `WORKER_DATABASE_URL` = that connection string
    - variable `WORKER_CONTACT` = an email address sites can use to reach you about the bot
+   - secret `GEMINI_API_KEY` = a free key from Google AI Studio (aistudio.google.com). Without it, pages are fetched and filtered but not extracted.
 4. Run **Actions → Discovery → Run workflow** once. A successful run appears on the app's Admin page.
+
+### 5. Add your first sources
+
+Open **Admin → Sources** in the app and add 10 to 20 official pages you have opened and checked yourself (provincial, city and university scholarship pages). Each daily run fetches the ones that are due, and anything that looks like a scholarship announcement appears in **Admin → Review queue**.
 
 The repository must be **public** for free GitHub Actions minutes. Only code lives in it; no student data or keys.
 
@@ -102,6 +107,22 @@ python -m pytest worker/tests
 - Import cities and municipalities with official PSGC codes: see `docs/reference-data.md`.
 - Schedule `private.purge_expired()` with Supabase Cron (monthly).
 
-## Next: Phase 2 (Discovery v1)
+## How a discovery run works
 
-Source registry for the first 10–20 official sources, polite fetching (robots.txt, per-host delay, ETag), text and PDF extraction, LLM extraction with per-field evidence, rule-based validation, and the admin review queue.
+1. **Discover:** due sources (daily near a deadline, monthly when dormant, otherwise each source's interval) and new student submissions go into `fetch_queue`.
+2. **Fetch:** robots.txt honored, 5 seconds between requests to one host, conditional requests so unchanged pages cost almost nothing, private addresses refused.
+3. **Extract:** page or PDF text; a keyword pre-filter (English and Filipino) decides whether the AI is called at all. The AI gets the page as quoted, untrusted data, has no tools, and must answer in a fixed JSON shape with the source sentence for every value.
+4. **Validate:** every value's evidence must appear in the page; dates are re-read by a rule-based parser and must agree; open/close order, swapped ranges, academic year, apply-link domain and status wording are checked. Failed values are dropped, never guessed.
+5. **Review:** each offering becomes a candidate with evidence rows and a review task. Nothing is published until a reviewer confirms the status on the official page and approves it.
+
+Daily status upkeep downgrades "open, verified" to "open, not recently confirmed" after 7 days, and closes offerings whose deadline passed once the source has been rechecked.
+
+## Not done yet
+
+- OCR for poster images and scanned PDFs (submissions with images wait in the queue).
+- Saving original files to Supabase Storage (text snapshots are kept).
+- The monthly coverage-audit form (the table exists).
+
+## Next: Phase 3 (Student app)
+
+The eligibility questionnaire, consent screens for sensitive questions, and the match screens.

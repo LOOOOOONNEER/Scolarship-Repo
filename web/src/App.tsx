@@ -10,6 +10,9 @@ import { Matches } from './pages/Matches';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
 import { Admin } from './pages/Admin';
+import { ReviewQueue } from './pages/admin/ReviewQueue';
+import { ReviewCandidate } from './pages/admin/ReviewCandidate';
+import { Sources } from './pages/admin/Sources';
 import { NotFound } from './pages/NotFound';
 import { SetupNeeded } from './pages/SetupNeeded';
 
@@ -20,11 +23,12 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function RequireAdmin({ children }: { children: ReactNode }) {
-  const { session, loading, isAdmin } = useAuth();
+// Admins and volunteer reviewers. The database checks the role again on every request.
+function RequireReviewer({ children }: { children: ReactNode }) {
+  const { session, loading, isReviewer } = useAuth();
   if (loading) return <p className="muted">Loading…</p>;
   if (!session) return <Navigate to="/sign-in" replace />;
-  if (!isAdmin) return <NotFound />;
+  if (!isReviewer) return <NotFound />;
   return <>{children}</>;
 }
 
@@ -46,7 +50,10 @@ export function App() {
         <Route path="/matches" element={<RequireAuth><Matches /></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
-        <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+        <Route path="/admin" element={<RequireReviewer><Admin /></RequireReviewer>} />
+        <Route path="/admin/review" element={<RequireReviewer><ReviewQueue /></RequireReviewer>} />
+        <Route path="/admin/review/:candidateId" element={<RequireReviewer><ReviewCandidate /></RequireReviewer>} />
+        <Route path="/admin/sources" element={<RequireReviewer><Sources /></RequireReviewer>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>

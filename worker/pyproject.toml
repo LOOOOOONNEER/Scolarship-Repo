@@ -9,6 +9,7 @@ description = "Background discovery worker for Scholarship Finder (runs on GitHu
 requires-python = ">=3.11"
 dependencies = [
   "psycopg[binary]>=3.2,<4",
+  "pypdf>=5,<7",
 ]
 
 [project.optional-dependencies]

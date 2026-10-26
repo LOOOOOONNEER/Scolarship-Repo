@@ -17,6 +17,10 @@ class Settings:
     user_agent: str
     # Minimum seconds between two requests to the same host.
     per_host_delay_s: float
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    batch_size: int = 40
+    llm_daily_limit: int = 1000
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -40,4 +44,20 @@ class Settings:
         if delay < 1:
             raise ConfigError("WORKER_PER_HOST_DELAY_S must be at least 1 second")
 
-        return cls(database_url=url, user_agent=agent, per_host_delay_s=delay)
+        try:
+            batch = int(env.get("WORKER_BATCH_SIZE", "40"))
+            llm_limit = int(env.get("WORKER_LLM_DAILY_LIMIT", "1000"))
+        except ValueError as exc:
+            raise ConfigError("WORKER_BATCH_SIZE and WORKER_LLM_DAILY_LIMIT must be whole numbers") from exc
+        if not (1 <= batch <= 500):
+            raise ConfigError("WORKER_BATCH_SIZE must be between 1 and 500")
+
+        return cls(
+            database_url=url,
+            user_agent=agent,
+            per_host_delay_s=delay,
+            gemini_api_key=env.get("GEMINI_API_KEY", "").strip(),
+            gemini_model=env.get("WORKER_GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash",
+            batch_size=batch,
+            llm_daily_limit=max(0, llm_limit),
+        )

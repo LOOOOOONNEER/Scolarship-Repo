@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth';
 import { InstallPrompt } from './InstallPrompt';
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { session, isAdmin, signOut } = useAuth();
+  const { session, isReviewer, signOut } = useAuth();
 
   return (
     <div className="shell">
@@ -20,7 +20,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <NavLink to="/matches">My matches</NavLink>
               <NavLink to="/profile">Profile</NavLink>
               <NavLink to="/settings">Privacy</NavLink>
-              {isAdmin && <NavLink to="/admin">Admin</NavLink>}
+              {isReviewer && <NavLink to="/admin">Admin</NavLink>}
               <button type="button" className="link-button" onClick={signOut}>
                 Sign out
               </button>

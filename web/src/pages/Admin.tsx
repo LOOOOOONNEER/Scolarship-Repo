@@ -3,6 +3,8 @@ import { requireClient } from '../lib/supabase';
 import type { JobRun, SourceHealth } from '../lib/types';
 import { formatDate } from '../lib/labels';
 import { Badge } from '../components/Badge';
+import { AdminNav } from '../components/AdminNav';
+import { Link } from 'react-router-dom';
 
 export function Admin() {
   const [jobs, setJobs] = useState<JobRun[]>([]);
@@ -34,17 +36,18 @@ export function Admin() {
 
   return (
     <section>
+      <AdminNav />
       <h1>Admin</h1>
 
       <div className="stats">
-        <div className="stat">
+        <Link className="stat" to="/admin/review">
           <span className="stat-value">{openTasks ?? '–'}</span>
           <span className="muted">open review tasks</span>
-        </div>
-        <div className="stat">
+        </Link>
+        <Link className="stat" to="/admin/sources">
           <span className="stat-value">{sources.length}</span>
           <span className="muted">sources in the registry</span>
-        </div>
+        </Link>
         <div className="stat">
           <span className="stat-value">{unhealthy.length}</span>
           <span className="muted">stale or failing sources</span>

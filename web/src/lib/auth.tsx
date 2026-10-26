@@ -6,6 +6,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isReviewer: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -13,13 +14,14 @@ const AuthContext = createContext<AuthState>({
   session: null,
   loading: true,
   isAdmin: false,
+  isReviewer: false,
   signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState({ admin: false, reviewer: false, checked: false });
 
   useEffect(() => {
     if (!supabase) {
@@ -36,11 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase || !session) {
-      setIsAdmin(false);
+      setRoles({ admin: false, reviewer: false, checked: true });
       return;
     }
-    // The database decides; this flag only controls what the menu shows.
-    supabase.rpc('is_admin').then(({ data }) => setIsAdmin(data === true));
+    setRoles((r) => ({ ...r, checked: false }));
+    // The database enforces every permission; these flags only decide what the menu shows.
+    Promise.all([supabase.rpc('is_admin'), supabase.rpc('is_reviewer')]).then(([a, r]) =>
+      setRoles({ admin: a.data === true, reviewer: r.data === true, checked: true }),
+    );
   }, [session]);
 
   const signOut = async () => {
@@ -48,7 +53,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, isAdmin, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider
+      value={{
+        session,
+        loading: loading || (session !== null && !roles.checked),
+        isAdmin: roles.admin,
+        isReviewer: roles.reviewer,
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 }
 

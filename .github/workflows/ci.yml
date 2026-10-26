@@ -43,10 +43,12 @@ jobs:
       - name: Install worker
         run: pip install -e "worker[dev]"
 
-      - name: Worker tests (unit + integration as discovery_worker)
+      - name: Worker tests (unit + end-to-end as discovery_worker)
         env:
           WORKER_TEST_DATABASE_URL: postgresql://discovery_worker:ci-test-only@localhost:5432/scholarship_finder_test
-        run: python -m pytest worker/tests -v
+          WORKER_TEST_ADMIN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/scholarship_finder_test
+        working-directory: worker
+        run: python -m pytest tests -v
 
   web:
     name: Web app build

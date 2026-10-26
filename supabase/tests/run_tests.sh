@@ -34,6 +34,7 @@ run "$here/sql/00_helpers.sql"
 run "$here/sql/10_fixtures.sql"
 run "$here/sql/20_anon_and_students.sql"
 run "$here/sql/30_admin.sql"
+run "$here/sql/50_review.sql"
 
 echo "== 40_worker.sql (connected as discovery_worker)"
 PGUSER=discovery_worker PGPASSWORD="$worker_pw" \

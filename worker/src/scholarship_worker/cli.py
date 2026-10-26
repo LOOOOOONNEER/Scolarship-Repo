@@ -17,6 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("check-config", help="validate settings without connecting")
     sub.add_parser("heartbeat", help="record a health check of the source registry")
+    sub.add_parser("discover", help="fetch due sources and submissions, extract, validate, queue for review")
     args = parser.parse_args(argv)
 
     configure_logging(logging.DEBUG if args.verbose else logging.INFO)
@@ -28,7 +29,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.command == "check-config":
-        log.info("configuration ok (user agent: %s)", settings.user_agent)
+        log.info("configuration ok (user agent: %s; AI extraction %s)", settings.user_agent,
+                 "on, model " + settings.gemini_model if settings.gemini_api_key else "off: GEMINI_API_KEY not set")
         return 0
 
     from scholarship_worker.db import connect
@@ -39,6 +41,10 @@ def main(argv: list[str] | None = None) -> int:
             from scholarship_worker.jobs import heartbeat
 
             heartbeat.run(conn)
+        elif args.command == "discover":
+            from scholarship_worker.jobs import discover
+
+            discover.run(conn, settings)
     finally:
         conn.close()
     return 0

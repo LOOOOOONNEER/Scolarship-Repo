@@ -14,22 +14,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  heartbeat:
+  discover:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install ./worker
-      - name: Heartbeat
+      - name: Discover
         env:
           WORKER_DATABASE_URL: ${{ secrets.WORKER_DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WORKER_CONTACT: ${{ vars.WORKER_CONTACT }}
         run: |
           if [ -z "$WORKER_DATABASE_URL" ]; then
             echo "::warning::WORKER_DATABASE_URL secret is not set yet; skipping (see README, step 4)."
             exit 0
           fi
+          python -m scholarship_worker discover
+
+      - name: Heartbeat
+        if: always()
+        env:
+          WORKER_DATABASE_URL: ${{ secrets.WORKER_DATABASE_URL }}
+          WORKER_CONTACT: ${{ vars.WORKER_CONTACT }}
+        run: |
+          if [ -z "$WORKER_DATABASE_URL" ]; then exit 0; fi
           python -m scholarship_worker heartbeat
